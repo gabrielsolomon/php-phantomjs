@@ -13,6 +13,7 @@ use JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface;
 use JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface;
 use JonnyW\PhantomJs\IO\InputInterface;
 use JonnyW\PhantomJs\IO\OutputInterface;
+use JonnyW\PhantomJs\DependencyInjection\ServiceContainer;
 
 /**
  * PHP PhantomJs.
