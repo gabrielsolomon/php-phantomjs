@@ -65,7 +65,6 @@ page.onResourceTimeout = function (error) {
  * On resource requested
  */
 page.onResourceRequested = function (req) {
-
     [[ engine.load('page_on_resource_requested') ]]
 
     {% if input.lazy %}
@@ -78,7 +77,6 @@ page.onResourceRequested = function (req) {
  * On resource received
  */
 page.onResourceReceived = function (res) {
-
     [[ engine.load('page_on_resource_received') ]]
 
     {% if input.lazy %}
@@ -116,7 +114,6 @@ phantom.onError = function(msg, trace) {
  * On load finished
  */
 page.onLoadFinished = function(status) {
-
     [[ engine.load('page_body_styles') ]]
 
     {% if input.lazy %}

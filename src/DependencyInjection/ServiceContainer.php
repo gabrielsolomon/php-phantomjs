@@ -23,8 +23,7 @@ class ServiceContainer extends ContainerBuilder
     /**
      * Service container instance.
      *
-     * @var static
-     * @access private
+     * @var \JonnyW\PhantomJs\DependencyInjection\ServiceContainer
      */
     private static $instance;
 
