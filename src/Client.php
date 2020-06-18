@@ -6,17 +6,17 @@
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
  */
-
 namespace JonnyW\PhantomJs;
 
 use JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface;
 use JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface;
-use JonnyW\PhantomJs\IO\InputInterface;
-use JonnyW\PhantomJs\IO\OutputInterface;
+use JonnyW\PhantomJs\Http\MessageFactoryInterface;
+use JonnyW\PhantomJs\Http\RequestInterface;
+use JonnyW\PhantomJs\Http\ResponseInterface;
 use JonnyW\PhantomJs\DependencyInjection\ServiceContainer;
 
 /**
- * PHP PhantomJs.
+ * PHP PhantomJs
  *
  * @author Jon Wenmoth <contact@jonnyw.me>
  */
@@ -25,14 +25,16 @@ class Client implements ClientInterface
     /**
      * Client.
      *
-     * @var \JonnyW\PhantomJs\Client\ClientInterface
+     * @var \JonnyW\PhantomJs\ClientInterface
+     * @access private
      */
-    protected static $instance;
+    private static $instance;
 
     /**
      * PhantomJs engine.
      *
      * @var \JonnyW\PhantomJs\Engine
+     * @access protected
      */
     protected $engine;
 
@@ -40,6 +42,7 @@ class Client implements ClientInterface
      * Procedure loader.
      *
      * @var \JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface
+     * @access protected
      */
     protected $procedureLoader;
 
@@ -47,45 +50,62 @@ class Client implements ClientInterface
      * Procedure validator.
      *
      * @var \JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface
+     * @access protected
      */
     protected $procedureCompiler;
 
     /**
-     * Procedure template.
+     * Message factory.
+     *
+     * @var \JonnyW\PhantomJs\Http\MessageFactoryInterface
+     * @access protected
+     */
+    protected $messageFactory;
+
+    /**
+     * Procedure template
      *
      * @var string
+     * @access protected
      */
     protected $procedure;
 
     /**
-     * Internal constructor.
+     * Internal constructor
      *
-     * @param \JonnyW\PhantomJs\Engine                               $engine
-     * @param \JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface   $procedureLoader
-     * @param \JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface $procedureCompiler
+     * @access public
+     * @param  \JonnyW\PhantomJs\Engine                               $engine
+     * @param  \JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface   $procedureLoader
+     * @param  \JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface $procedureCompiler
+     * @param  \JonnyW\PhantomJs\Http\MessageFactoryInterface         $messageFactory
+     * @return void
      */
-    public function __construct(Engine $engine, ProcedureLoaderInterface $procedureLoader, ProcedureCompilerInterface $procedureCompiler)
+    public function __construct(Engine $engine, ProcedureLoaderInterface $procedureLoader, ProcedureCompilerInterface $procedureCompiler, MessageFactoryInterface $messageFactory)
     {
-        $this->engine = $engine;
-        $this->procedureLoader = $procedureLoader;
+        $this->engine            = $engine;
+        $this->procedureLoader   = $procedureLoader;
         $this->procedureCompiler = $procedureCompiler;
-        $this->procedure = 'default';
+        $this->messageFactory    = $messageFactory;
+        $this->procedure         = 'http_default';
     }
 
     /**
-     * Get singleton instance.
+     * Get singleton instance
      *
-     * @return \JonnyW\PhantomJs\Client\ClientInterface
+     * @access public
+     * @return \JonnyW\PhantomJs\Client
      */
     public static function getInstance()
     {
         if (!self::$instance instanceof ClientInterface) {
+
             $serviceContainer = ServiceContainer::getInstance();
 
             self::$instance = new static(
                 $serviceContainer->get('engine'),
                 $serviceContainer->get('procedure_loader'),
-                $serviceContainer->get('procedure_compiler')
+                $serviceContainer->get('procedure_compiler'),
+                $serviceContainer->get('message_factory')
             );
         }
 
@@ -93,27 +113,9 @@ class Client implements ClientInterface
     }
 
     /**
-     * Run client.
-     *
-     * @param \JonnyW\PhantomJs\IO\InputInterface  $input
-     * @param \JonnyW\PhantomJs\IO\OutputInterface $output
-     *
-     * @return \JonnyW\PhantomJs\IO\OutputInterface
-     */
-    public function run(InputInterface $input, OutputInterface $output)
-    {
-        $procedure = $this->procedureLoader->load($this->procedure);
-
-        $this->procedureCompiler->compile($procedure, $input);
-
-        $procedure->run($input, $output);
-
-        return $output;
-    }
-
-    /**
      * Get PhantomJs engine.
      *
+     * @access public
      * @return \JonnyW\PhantomJs\Engine
      */
     public function getEngine()
@@ -122,8 +124,20 @@ class Client implements ClientInterface
     }
 
     /**
-     * Get procedure loader instance.
+     * Get message factory instance
      *
+     * @access public
+     * @return \JonnyW\PhantomJs\Http\MessageFactoryInterface
+     */
+    public function getMessageFactory()
+    {
+        return $this->messageFactory;
+    }
+
+    /**
+     * Get procedure loader instance
+     *
+     * @access public
      * @return \JonnyW\PhantomJs\Procedure\ProcedureLoaderInterface
      */
     public function getProcedureLoader()
@@ -132,19 +146,41 @@ class Client implements ClientInterface
     }
 
     /**
-     * Get procedure compiler.
+     * Send request
      *
-     * @return \JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface
+     * @access public
+     * @param  \JonnyW\PhantomJs\Http\RequestInterface  $request
+     * @param  \JonnyW\PhantomJs\Http\ResponseInterface $response
+     * @return \JonnyW\PhantomJs\Http\ResponseInterface
      */
-    public function getProcedureCompiler()
+    public function send(RequestInterface $request, ResponseInterface $response)
     {
-        return $this->procedureCompiler;
+        $procedure = $this->procedureLoader->load($this->procedure);
+
+        $this->procedureCompiler->compile($procedure, $request);
+
+        $procedure->run($request, $response);
+
+        return $response;
+    }
+
+    /**
+     * Get log.
+     *
+     * @access public
+     * @return string
+     */
+    public function getLog()
+    {
+        return $this->getEngine()->getLog();
     }
 
     /**
      * Set procedure template.
      *
-     * @param string $procedure
+     * @access public
+     * @param  string $procedure
+     * @return void
      */
     public function setProcedure($procedure)
     {
@@ -154,6 +190,7 @@ class Client implements ClientInterface
     /**
      * Get procedure template.
      *
+     * @access public
      * @return string
      */
     public function getProcedure()
@@ -162,12 +199,24 @@ class Client implements ClientInterface
     }
 
     /**
-     * Get log.
+     * Get procedure compiler.
      *
-     * @return string
+     * @access public
+     * @return \JonnyW\PhantomJs\Procedure\ProcedureCompilerInterface
      */
-    public function getLog()
+    public function getProcedureCompiler()
     {
-        return $this->getEngine()->getLog();
+        return $this->procedureCompiler;
+    }
+
+    /**
+     * Set lazy request flag.
+     *
+     * @access public
+     * @return void
+     */
+    public function isLazy()
+    {
+        $this->procedure = 'http_lazy';
     }
 }
