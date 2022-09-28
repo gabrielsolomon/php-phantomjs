@@ -104,7 +104,7 @@ class Procedure implements ProcedureInterface
                 array('pipe', 'w')
             );
 
-            $process = proc_open(escapeshellcmd(sprintf('%s %s', $this->engine->getCommand(), $executable)), $descriptorspec, $pipes, null, null);
+            $process = proc_open(escapeshellcmd(sprintf('%s %s', 'OPENSSL_CONF=/dev/null ' . $this->engine->getCommand(), $executable)), $descriptorspec, $pipes, null, null);
 
             if (!is_resource($process)) {
                 throw new ProcedureFailedException('proc_open() did not return a resource');
